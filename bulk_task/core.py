@@ -30,19 +30,6 @@ class _FuncWrapper:
         return repr(self.func)
 
 
-def consume(quantity=500):
-    queue = queue_factory()
-    jobs = queue.dequeue(quantity)
-    grouped = group_by(jobs, key=operator.attrgetter('func'))
-    for func, grouped_jobs in grouped.items():
-        try:
-            bulk_call(func, grouped_jobs)
-        except Exception:
-            capture_exception()
-            for job in jobs:
-                queue.enqueue(job)
-
-
 def bulk_call(func, jobs):
     func([job.args.as_model() for job in jobs])
 
