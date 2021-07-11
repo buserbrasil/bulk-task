@@ -28,7 +28,7 @@ class _FuncWrapper:
         job = Job(self.func, Args(self.model, args, kwargs))
 
         if _on_eager_mode():
-            batch_call(self.func, [job])
+            bulk_call(self.func, [job])
         else:
             queue = queue_factory()
             queue.enqueue(job)
@@ -37,7 +37,7 @@ class _FuncWrapper:
         return repr(self.func)
 
 
-def batch_task(func):
+def bulk_task(func):
     type_hints = typing.get_type_hints(func)
     argument_type = list(type_hints.values())[0]
     model = typing.get_args(argument_type)[0]
@@ -51,14 +51,14 @@ def consume(quantity=500):
     grouped = _group_by(jobs, key=operator.attrgetter('func'))
     for func, grouped_jobs in grouped.items():
         try:
-            batch_call(func, grouped_jobs)
+            bulk_call(func, grouped_jobs)
         except Exception:
             capture_exception()
             for job in jobs:
                 queue.enqueue(job)
 
 
-def batch_call(func, jobs):
+def bulk_call(func, jobs):
     func([job.args.as_model() for job in jobs])
 
 

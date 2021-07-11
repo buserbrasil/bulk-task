@@ -4,9 +4,9 @@ from unittest import mock
 
 import pytest
 
-from celery_bulk.core import consume, batch_task
-from celery_bulk.models import Job, Args
-from celery_bulk.queue import queue_factory
+from bulk_task.core import consume, bulk_task
+from bulk_task.models import Job, Args
+from bulk_task.queue import queue_factory
 
 
 @dataclass
@@ -60,7 +60,7 @@ def clean_queue():
 
 def test_args_serialize(args):
     serialized = (
-        'test_celery_bulk.DataclassModel',
+        'test_bulk_task.DataclassModel',
         {'args': ('walison',), 'kwargs': {}},
     )
     assert args.serialize() == serialized
@@ -68,7 +68,7 @@ def test_args_serialize(args):
 
 def test_args_deserialize():
     serialized = (
-        'test_celery_bulk.DataclassModel',
+        'test_bulk_task.DataclassModel',
         {'args': ('walison',), 'kwargs': {}},
     )
     args = Args.deserialize(serialized)
@@ -85,9 +85,9 @@ def test_args_as_model(args):
 
 def test_job_serialize(job):
     serialized = (
-        'test_celery_bulk.echo',
+        'test_bulk_task.echo',
         (
-            'test_celery_bulk.DataclassModel',
+            'test_bulk_task.DataclassModel',
             {'args': ('walison',), 'kwargs': {}},
         )
     )
@@ -96,9 +96,9 @@ def test_job_serialize(job):
 
 def test_job_deserialize():
     serialized = (
-        'test_celery_bulk.echo',
+        'test_bulk_task.echo',
         (
-            'test_celery_bulk.DataclassModel',
+            'test_bulk_task.DataclassModel',
             {'args': ('walison',), 'kwargs': {}},
         )
     )
@@ -109,17 +109,17 @@ def test_job_deserialize():
     assert isinstance(job.args, Args)
 
 
-@mock.patch('celery_bulk.core.batch_call')
-def test_consume(mock_batch_exec, job, job2, queue):
+@mock.patch('bulk_task.core.bulk_call')
+def test_consume(mock_bulk_exec, job, job2, queue):
     queue.enqueue(job)
     queue.enqueue(job2)
     consume()
 
-    assert mock_batch_exec.call_count == 2
+    assert mock_bulk_exec.call_count == 2
     assert len(queue) == 0
 
 
-@mock.patch('celery_bulk.core.capture_exception')
+@mock.patch('bulk_task.core.capture_exception')
 def test_consume_handle_exception(mock_capture_exception, error_job, queue):
     """Deve remover o(s) job(s) da fila e capturar a exceção via sentry"""
     queue.enqueue(error_job)
@@ -129,8 +129,8 @@ def test_consume_handle_exception(mock_capture_exception, error_job, queue):
     mock_capture_exception.assert_called()
 
 
-def test_lazy_batch_dataclass_model(queue):
-    @batch_task
+def test_lazy_bulk_dataclass_model(queue):
+    @bulk_task
     def func(args: List[DataclassModel]):
         pass
 
@@ -140,14 +140,14 @@ def test_lazy_batch_dataclass_model(queue):
     assert len(queue) == 2
 
 
-def test_lazy_batch_pydantic_model(queue):
+def test_lazy_bulk_pydantic_model(queue):
     pydantic = pytest.importorskip('pydantic')
     BaseModel = pydantic.BaseModel
 
     class PydanticModel(BaseModel):
         a: str
 
-    @batch_task
+    @bulk_task
     def func(args: List[PydanticModel]):
         pass
 

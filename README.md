@@ -1,1 +1,1 @@
-# celery-bulk
+# bulk-task

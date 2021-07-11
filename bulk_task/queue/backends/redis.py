@@ -8,14 +8,15 @@ from .. import JobQueue
 
 class RedisClient:
     def __init__(self, key_prefix, *, timeout=None, client_factory=redis,
-                 json_loads=json.loads, json_dumps=json.dumps):
+                 json_loads=json.loads, json_dumps=json.dumps,
+                 client_cls=redis.Redis):
         """
         Timeout é o tempo de expiração da key. Pode ser um int em segundos ou
         um timedelta.
         """
         self.key_prefix = key_prefix
         self.timeout = timeout
-        self.client = redis.Redis()
+        self.client = client_cls()
         self.json_loads = json_loads
         self.json_dumps = json_dumps
 
@@ -51,7 +52,7 @@ class Queue(JobQueue):
     prefix = ':jobs'
 
     def __init__(self):
-        self._client = RedisClient('lazy_batch')
+        self._client = RedisClient('bulk_task')
 
     def enqueue(self, job):
         self._client.push(self.prefix, job.serialize())
