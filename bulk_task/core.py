@@ -3,7 +3,6 @@ import typing
 import operator
 
 from .models import Job, Args
-from .queue import queue_factory
 from .utils import group_by
 
 
@@ -38,10 +37,30 @@ def capture_exception():
     pass
 
 
+class JobQueue:
+    def __init__(self, backend):
+        self.backend = backend
+
+    def enqueue(self, job):
+        self.backend.enqueue(job.serialize())
+
+    def dequeue(self, quantity):
+        items = self.backend.dequeue(quantity)
+        return list(map(Job.deserialize, items))
+
+    def clear(self):
+        self.backend.clear()
+
+    def count(self):
+        return self.backend.count()
+
+    def __len__(self):
+        return self.count()
+
+
 class BulkTask:
-    def __init__(self, queue_module='bulk_task.queue.backends.redis',
-                 eager_mode=False):
-        self.queue_module = queue_module
+    def __init__(self, backend, eager_mode=False):
+        self.backend = backend
         self.eager_mode = eager_mode
 
     @property
@@ -49,7 +68,7 @@ class BulkTask:
         try:
             self._queue
         except AttributeError:
-            self._queue = queue_factory(self.queue_module)
+            self._queue = JobQueue(self.backend)
         return self._queue
 
     def enqueue(self, job):

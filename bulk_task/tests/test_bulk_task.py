@@ -6,6 +6,7 @@ import pytest
 
 from bulk_task import BulkTask
 from bulk_task.models import Job, Args
+from bulk_task.backend import Dummy
 
 
 @dataclass
@@ -15,7 +16,8 @@ class DataclassModel:
 
 @pytest.fixture
 def bulk_task():
-    return BulkTask('bulk_task.queue.backends.dummy')
+    backend = Dummy()
+    return BulkTask(backend)
 
 
 @pytest.fixture
