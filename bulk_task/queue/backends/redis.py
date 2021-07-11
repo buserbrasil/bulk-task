@@ -66,6 +66,3 @@ class Queue(JobQueue):
 
     def count(self):
         return self._client.count(self.prefix)
-
-    def __len__(self):
-        return self.count()

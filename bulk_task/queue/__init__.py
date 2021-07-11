@@ -13,6 +13,12 @@ class JobQueue:
     def clear(self):
         raise NotImplementedError('must implement clear()')
 
+    def count(self):
+        raise NotImplementedError('must implement count()')
+
+    def __len__(self):
+        return self.count()
+
 
 def queue_factory() -> JobQueue:
     queue_module = import_module(settings.BULK_TASK_QUEUE)
