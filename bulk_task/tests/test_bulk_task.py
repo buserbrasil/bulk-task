@@ -1,12 +1,11 @@
-from typing import List
 from dataclasses import dataclass
+from typing import List
 from unittest import mock
 
 import pytest
 
 from bulk_task import BulkTask
 from bulk_task.models import Job, Args
-from bulk_task.queue import queue_factory
 
 
 @dataclass
@@ -49,18 +48,6 @@ def error(args):
 @pytest.fixture
 def error_job(args):
     return Job(error, args)
-
-
-@pytest.fixture
-def queue():
-    return queue_factory()
-
-
-@pytest.fixture(autouse=True)
-def clean_queue():
-    yield
-    queue = queue_factory()
-    queue.clear()
 
 
 def test_args_serialize(args):
@@ -147,7 +134,7 @@ def test_lazy_bulk_dataclass_model(bulk_task):
     assert len(bulk_task.queue) == 2
 
 
-def test_lazy_bulk_pydantic_model(queue):
+def test_lazy_bulk_pydantic_model(bulk_task):
     pydantic = pytest.importorskip('pydantic')
     BaseModel = pydantic.BaseModel
 
@@ -160,4 +147,4 @@ def test_lazy_bulk_pydantic_model(queue):
 
     func.push(a='example')
 
-    assert len(queue) == 1
+    assert len(bulk_task.queue) == 1
