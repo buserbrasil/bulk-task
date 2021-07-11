@@ -7,6 +7,7 @@ setup(
         'pytest-runner',
     ],
     tests_require=[
+        'fakeredis',
         'pytest',
         'pytest-cov',
         'pytest-flake8',

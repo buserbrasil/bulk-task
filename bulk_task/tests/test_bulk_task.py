@@ -2,11 +2,12 @@ from dataclasses import dataclass
 from typing import List
 from unittest import mock
 
+import fakeredis
 import pytest
 
 from bulk_task import BulkTask
 from bulk_task.models import Job, Args
-from bulk_task.backend import Dummy
+from bulk_task.backend import Redis
 
 
 @dataclass
@@ -16,7 +17,7 @@ class DataclassModel:
 
 @pytest.fixture
 def bulk_task():
-    backend = Dummy()
+    backend = Redis(client=fakeredis.FakeStrictRedis())
     return BulkTask(backend)
 
 
@@ -110,6 +111,17 @@ def test_consume(mock_bulk_exec, job, job2, bulk_task):
     bulk_task.consume()
 
     assert mock_bulk_exec.call_count == 2
+    assert len(bulk_task.queue) == 0
+
+
+@mock.patch('bulk_task.core.bulk_call')
+def test_clear(mock_bulk_exec, job, job2, bulk_task):
+    bulk_task.enqueue(job)
+    bulk_task.enqueue(job2)
+    bulk_task.queue.clear()
+    bulk_task.consume()
+
+    assert mock_bulk_exec.call_count == 0
     assert len(bulk_task.queue) == 0
 
 

@@ -9,6 +9,6 @@ def import_string(dotted_path):
 
 def group_by(iterable, key):
     buckets = {}
-    for i in iterable:
-        buckets.setdefault(key(i), []).append(i)
+    for item in iterable:
+        buckets.setdefault(key(item), []).append(item)
     return buckets

@@ -7,11 +7,10 @@ from .utils import group_by
 
 
 class _FuncWrapper:
-    def __init__(self, func, model, *, queue, eager_mode):
+    def __init__(self, func, model, client):
         self.func = func
         self.model = model
-        self.queue = queue
-        self.eager_mode = eager_mode
+        self.client = client
         functools.update_wrapper(self, func)
 
     def __call__(self, *args, **kwargs):
@@ -20,10 +19,10 @@ class _FuncWrapper:
     def push(self, *args, **kwargs):
         job = Job(self.func, Args(self.model, args, kwargs))
 
-        if self.eager_mode:
+        if self.client.eager_mode:
             bulk_call(self.func, [job])
         else:
-            self.queue.enqueue(job)
+            self.client.enqueue(job)
 
     def __repr__(self):
         return repr(self.func)
@@ -37,53 +36,27 @@ def capture_exception():
     pass
 
 
-class JobQueue:
-    def __init__(self, backend):
-        self.backend = backend
-
-    def enqueue(self, job):
-        self.backend.enqueue(job.serialize())
-
-    def dequeue(self, quantity):
-        items = self.backend.dequeue(quantity)
-        return list(map(Job.deserialize, items))
-
-    def clear(self):
-        self.backend.clear()
-
-    def count(self):
-        return self.backend.count()
-
-    def __len__(self):
-        return self.count()
-
-
 class BulkTask:
-    def __init__(self, backend, eager_mode=False):
-        self.backend = backend
+    def __init__(self, queue, eager_mode=False):
+        self.queue = queue
         self.eager_mode = eager_mode
 
-    @property
-    def queue(self):
-        try:
-            self._queue
-        except AttributeError:
-            self._queue = JobQueue(self.backend)
-        return self._queue
-
     def enqueue(self, job):
-        self.queue.enqueue(job)
+        self.queue.enqueue(job.serialize())
+
+    def dequeue(self, quantity):
+        items = self.queue.dequeue(quantity)
+        return list(map(Job.deserialize, items))
 
     def bulk_task(self, func):
         type_hints = typing.get_type_hints(func)
         argument_type = list(type_hints.values())[0]
         model = typing.get_args(argument_type)[0]
 
-        return _FuncWrapper(
-            func, model, queue=self.queue, eager_mode=self.eager_mode)
+        return _FuncWrapper(func, model, self)
 
     def consume(self, quantity=500):
-        jobs = self.queue.dequeue(quantity)
+        jobs = self.dequeue(quantity)
         grouped = group_by(jobs, key=operator.attrgetter('func'))
         for func, grouped_jobs in grouped.items():
             try:
