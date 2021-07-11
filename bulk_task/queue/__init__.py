@@ -1,7 +1,5 @@
 from importlib import import_module
 
-from .. import settings
-
 
 class JobQueue:
     def enqueue(self, job):
@@ -20,6 +18,7 @@ class JobQueue:
         return self.count()
 
 
-def queue_factory() -> JobQueue:
-    queue_module = import_module(settings.BULK_TASK_QUEUE)
-    return queue_module.Queue()
+def queue_factory(queue_module=None) -> JobQueue:
+    if queue_module is None:
+        queue_module = 'bulk_task.queue.backends.redis'
+    return import_module(queue_module).Queue()

@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 
-from bulk_task.core import consume, bulk_task
+from bulk_task import BulkTask
 from bulk_task.models import Job, Args
 from bulk_task.queue import queue_factory
 
@@ -12,6 +12,11 @@ from bulk_task.queue import queue_factory
 @dataclass
 class DataclassModel:
     name: str
+
+
+@pytest.fixture
+def bulk_task():
+    return BulkTask('bulk_task.queue.backends.dummy')
 
 
 @pytest.fixture
@@ -110,26 +115,28 @@ def test_job_deserialize():
 
 
 @mock.patch('bulk_task.core.bulk_call')
-def test_consume(mock_bulk_exec, job, job2, queue):
-    queue.enqueue(job)
-    queue.enqueue(job2)
-    consume()
+def test_consume(mock_bulk_exec, job, job2, bulk_task):
+    bulk_task.enqueue(job)
+    bulk_task.enqueue(job2)
+    bulk_task.consume()
 
     assert mock_bulk_exec.call_count == 2
-    assert len(queue) == 0
+    assert len(bulk_task.queue) == 0
 
 
 @mock.patch('bulk_task.core.capture_exception')
-def test_consume_handle_exception(mock_capture_exception, error_job, queue):
+def test_consume_handle_exception(
+    mock_capture_exception, error_job, bulk_task
+):
     """Deve remover o(s) job(s) da fila e capturar a exceção via sentry"""
-    queue.enqueue(error_job)
-    consume()
+    bulk_task.enqueue(error_job)
+    bulk_task.consume()
 
-    assert len(queue) == 1
+    assert len(bulk_task.queue) == 1
     mock_capture_exception.assert_called()
 
 
-def test_lazy_bulk_dataclass_model(queue):
+def test_lazy_bulk_dataclass_model(bulk_task):
     @bulk_task
     def func(args: List[DataclassModel]):
         pass
@@ -137,7 +144,7 @@ def test_lazy_bulk_dataclass_model(queue):
     func.push('walison')
     func.push('filipe')
 
-    assert len(queue) == 2
+    assert len(bulk_task.queue) == 2
 
 
 def test_lazy_bulk_pydantic_model(queue):

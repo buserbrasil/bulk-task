@@ -1,3 +1,3 @@
-from .core import bulk_task
+from .core import BulkTask
 
-bulk_task = bulk_task
+BulkTask = BulkTask
