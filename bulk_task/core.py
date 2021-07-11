@@ -39,7 +39,8 @@ def capture_exception():
 
 
 class BulkTask:
-    def __init__(self, queue_module=None, eager_mode=False):
+    def __init__(self, queue_module='bulk_task.queue.backends.redis',
+                 eager_mode=False):
         self.queue_module = queue_module
         self.eager_mode = eager_mode
 
@@ -71,7 +72,7 @@ class BulkTask:
             except Exception:
                 capture_exception()
                 for job in jobs:
-                    self.queue.enqueue(job)
+                    self.enqueue(job)
 
     def __call__(self, func):
         return self.bulk_task(func)

@@ -18,7 +18,5 @@ class JobQueue:
         return self.count()
 
 
-def queue_factory(queue_module=None) -> JobQueue:
-    if queue_module is None:
-        queue_module = 'bulk_task.queue.backends.redis'
+def queue_factory(queue_module) -> JobQueue:
     return import_module(queue_module).Queue()
