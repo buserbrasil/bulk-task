@@ -48,18 +48,28 @@ class BulkTask:
         return _FuncWrapper(func, model, self)
 
     def bulk_call(self, func, jobs):
-        func([job.args.as_model() for job in jobs])
+        try:
+            func([job.args.as_model() for job in jobs])
+        except Exception:
+            size = len(jobs)
+
+            # This is the broken job.
+            if size == 1:
+                self.capture_exception()
+                for job in jobs:
+                    self.enqueue(job)
+            else:
+                mid = size // 2
+                jobs_bisect = jobs[:mid], jobs[mid:]
+                for part in jobs_bisect:
+                    if part:
+                        self.bulk_call(func, part)
 
     def consume(self, quantity=500):
         jobs = self.dequeue(quantity)
         grouped = group_by(jobs, key=operator.attrgetter('func'))
         for func, grouped_jobs in grouped.items():
-            try:
-                self.bulk_call(func, grouped_jobs)
-            except Exception:
-                self.capture_exception()
-                for job in jobs:
-                    self.enqueue(job)
+            self.bulk_call(func, grouped_jobs)
 
     def __call__(self, func):
         return self.bulk_task(func)

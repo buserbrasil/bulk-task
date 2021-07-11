@@ -34,6 +34,12 @@ def echo2(args):
     pass
 
 
+def failing(args):
+    for arg in args:
+        if arg.name == 'error':
+            raise Exception(arg.name)
+
+
 @pytest.fixture
 def job(args):
     return Job(echo, args)
@@ -161,4 +167,12 @@ def test_lazy_bulk_pydantic_model(bulk_task):
 
     func.push(a='example')
 
+    assert len(bulk_task.queue) == 1
+
+
+def test_lazy_batch_bisect_errors(bulk_task):
+    bulk_task.enqueue(Job(failing, Args(DataclassModel, ('walison',))))
+    bulk_task.enqueue(Job(failing, Args(DataclassModel, ('error',))))
+    bulk_task.enqueue(Job(failing, Args(DataclassModel, ('filipe',))))
+    bulk_task.consume()
     assert len(bulk_task.queue) == 1
