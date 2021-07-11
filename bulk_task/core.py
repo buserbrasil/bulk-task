@@ -1,4 +1,3 @@
-from collections import defaultdict
 import functools
 import typing
 import operator
@@ -6,13 +5,7 @@ import operator
 from . import settings
 from .models import Job, Args
 from .queue import queue_factory
-
-
-def _group_by(iterable, key):
-    buckets = defaultdict(list)
-    for i in iterable:
-        buckets[key(i)].append(i)
-    return buckets
+from .utils import group_by
 
 
 class _FuncWrapper:
@@ -48,7 +41,7 @@ def bulk_task(func):
 def consume(quantity=500):
     queue = queue_factory()
     jobs = queue.dequeue(quantity)
-    grouped = _group_by(jobs, key=operator.attrgetter('func'))
+    grouped = group_by(jobs, key=operator.attrgetter('func'))
     for func, grouped_jobs in grouped.items():
         try:
             bulk_call(func, grouped_jobs)
