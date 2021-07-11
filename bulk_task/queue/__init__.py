@@ -15,5 +15,5 @@ class JobQueue:
 
 
 def queue_factory() -> JobQueue:
-    queue_module = import_module(settings.BATCH_TASK_QUEUE)
+    queue_module = import_module(settings.BULK_TASK_QUEUE)
     return queue_module.Queue()

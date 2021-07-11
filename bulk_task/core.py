@@ -63,7 +63,7 @@ def bulk_call(func, jobs):
 
 
 def _on_eager_mode():
-    return settings.BATCH_TASK_EAGER
+    return settings.BULK_TASK_EAGER
 
 
 def capture_exception():
