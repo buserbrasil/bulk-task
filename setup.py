@@ -8,6 +8,7 @@ setup(
     ],
     tests_require=[
         'fakeredis',
+        'pydantic',
         'pytest',
         'pytest-cov',
         'pytest-flake8',
