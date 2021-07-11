@@ -20,20 +20,12 @@ class _FuncWrapper:
         job = Job(self.func, Args(self.model, args, kwargs))
 
         if self.client.eager_mode:
-            bulk_call(self.func, [job])
+            self.client.bulk_call(self.func, [job])
         else:
             self.client.enqueue(job)
 
     def __repr__(self):
         return repr(self.func)
-
-
-def bulk_call(func, jobs):
-    func([job.args.as_model() for job in jobs])
-
-
-def capture_exception():
-    pass
 
 
 class BulkTask:
@@ -55,16 +47,22 @@ class BulkTask:
 
         return _FuncWrapper(func, model, self)
 
+    def bulk_call(self, func, jobs):
+        func([job.args.as_model() for job in jobs])
+
     def consume(self, quantity=500):
         jobs = self.dequeue(quantity)
         grouped = group_by(jobs, key=operator.attrgetter('func'))
         for func, grouped_jobs in grouped.items():
             try:
-                bulk_call(func, grouped_jobs)
+                self.bulk_call(func, grouped_jobs)
             except Exception:
-                capture_exception()
+                self.capture_exception()
                 for job in jobs:
                     self.enqueue(job)
 
     def __call__(self, func):
         return self.bulk_task(func)
+
+    def capture_exception(self):
+        pass

@@ -104,34 +104,34 @@ def test_job_deserialize():
     assert isinstance(job.args, Args)
 
 
-@mock.patch('bulk_task.core.bulk_call')
-def test_consume(mock_bulk_exec, job, job2, bulk_task):
+def test_consume(job, job2, bulk_task):
     bulk_task.enqueue(job)
     bulk_task.enqueue(job2)
-    bulk_task.consume()
+    with mock.patch.object(bulk_task, 'bulk_call') as mock_bulk_exec:
+        bulk_task.consume()
 
     assert mock_bulk_exec.call_count == 2
     assert len(bulk_task.queue) == 0
 
 
-@mock.patch('bulk_task.core.bulk_call')
-def test_clear(mock_bulk_exec, job, job2, bulk_task):
+def test_clear(job, job2, bulk_task):
     bulk_task.enqueue(job)
     bulk_task.enqueue(job2)
     bulk_task.queue.clear()
-    bulk_task.consume()
+    with mock.patch.object(bulk_task, 'bulk_call') as mock_bulk_exec:
+        bulk_task.consume()
 
     assert mock_bulk_exec.call_count == 0
     assert len(bulk_task.queue) == 0
 
 
-@mock.patch('bulk_task.core.capture_exception')
-def test_consume_handle_exception(
-    mock_capture_exception, error_job, bulk_task
-):
+def test_consume_handle_exception(error_job, bulk_task):
     """Deve remover o(s) job(s) da fila e capturar a exceção via sentry"""
     bulk_task.enqueue(error_job)
-    bulk_task.consume()
+    with mock.patch.object(
+        bulk_task, 'capture_exception'
+    ) as mock_capture_exception:
+        bulk_task.consume()
 
     assert len(bulk_task.queue) == 1
     mock_capture_exception.assert_called()
